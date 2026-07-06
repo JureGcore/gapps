@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gcore UTM Generator</title>
+<style>
+  :root{
+    --panel:#ffffff;
+    --panel-2:#f6f7f9;
+    --border:#e6e7eb;
+    --text:#1c1f26;
+    --muted:#767c8c;
+    --accent:#ff6a1a;
+    --accent-2:#ff8a3d;
+    --accent-dark:#e2540a;
+    --error:#dc2626;
+    --success:#16a34a;
+    --mono: "SF Mono", "Consolas", "Menlo", monospace;
+  }
+  *{box-sizing:border-box;}
+  html, body{min-height:100%;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background-color:#F8F6F4;
+    color:var(--text);
+    padding:32px 20px 80px;
+  }
+  .bg-layer{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    z-index:-1;
+    overflow:hidden;
+  }
+  .bg-layer svg{
+    width:100%;
+    height:100%;
+  }
+  .wrap{max-width:1160px;margin:0 auto;position:relative;z-index:1;}
+  header{margin-bottom:28px;}
+  header h1{font-size:24px;margin:0 0 4px;font-weight:700;color:var(--text);}
+  header p{margin:0;color:var(--muted);font-size:13.5px;}
+  .grid{
+    display:grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width: 880px){ .grid{grid-template-columns:1fr;} }
+  .group-heading{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--accent-dark);
+    font-weight:700;
+    margin:22px 0 10px;
+  }
+  .group-heading:first-child{margin-top:0;}
+  .panel{
+    background:var(--panel);
+    border:1px solid rgba(0,0,0,0.04);
+    border-radius:14px;
+    padding:18px 20px;
+    box-shadow:0 8px 24px rgba(120,40,0,0.14);
+  }
+  .panel + .panel{margin-top:14px;}
+  .section-title{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent-dark);
+    font-weight:700;
+    margin:0 0 14px;
+  }
+  label{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    font-size:16px;
+    font-weight:700;
+    margin-bottom:6px;
+    color:var(--text);
+  }
+  label .req{color:var(--error);font-weight:700;}
+  label .opt{color:var(--muted);font-weight:400;font-size:11.5px;}
+  .hint{color:var(--muted);font-size:14px;margin:2px 0 8px;line-height:1.4;}
+  select, input[type=text], input[type=url], textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:8px;
+    font-size:13.5px;
+    outline:none;
+    font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:64px;line-height:1.4;}
+  select:focus, input:focus, textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,106,26,0.12);}
+  select.invalid, input.invalid{border-color:var(--error);}
+  input.has-value, textarea.has-value, select.has-value{color:var(--accent);font-weight:700;}
+  .smart-fill-feedback{display:block;color:var(--muted);font-size:12px;margin-top:8px;}
+  .smart-fill-feedback.ok{color:var(--success);}
+  details.smart-fill{margin:22px 0 0;}
+  details.smart-fill:first-child{margin-top:0;}
+  details.smart-fill summary{
+    cursor:pointer;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--accent-dark);
+    font-weight:700;
+    list-style:none;
+    padding:2px 0 10px;
+  }
+  details.smart-fill summary::-webkit-details-marker{display:none;}
+  details.smart-fill summary::before{content:"▸ ";}
+  details.smart-fill[open] summary::before{content:"▾ ";}
+  .smart-fill-panel{margin-top:0;}
+  .custom-input{margin-top:8px;display:none;}
+  .custom-input.show{display:block;}
+  .icon-select{position:relative;}
+  .icon-select-trigger{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:7px 10px;
+    border-radius:8px;
+    font-size:13.5px;
+    outline:none;
+    font-family:inherit;
+    cursor:pointer;
+    text-align:left;
+  }
+  .icon-select-trigger:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,106,26,0.12);}
+  .icon-select-trigger.placeholder .icon-select-label{color:var(--muted);}
+  .icon-select-trigger:not(.placeholder) .icon-select-label{color:var(--accent);font-weight:700;}
+  .icon-select-label{flex:1;}
+  .icon-select-caret{color:var(--muted);font-size:10px;margin-left:2px;}
+  .icon-select-icon{width:22px;height:22px;flex:0 0 22px;border-radius:50%;overflow:hidden;display:flex;}
+  .icon-select-icon svg{width:100%;height:100%;display:block;}
+  .icon-select-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0; right:0;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:0 14px 32px rgba(0,0,0,0.16);
+    max-height:280px;
+    overflow-y:auto;
+    z-index:30;
+    display:none;
+    padding:6px;
+  }
+  .icon-select-menu.open{display:block;}
+  .icon-select-option{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:7px 9px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13.5px;
+    color:var(--text);
+  }
+  .icon-select-option .icon-select-icon{width:20px;height:20px;flex:0 0 20px;}
+  .icon-select-option:hover{background:var(--panel-2);}
+  .icon-select-option.is-custom{border-top:1px solid var(--border);margin-top:4px;padding-top:9px;}
+  .errors{
+    background:rgba(220,38,38,0.06);
+    border:1px solid rgba(220,38,38,0.25);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:16px;
+    font-size:12.5px;
+    color:var(--error);
+  }
+  .errors ul{margin:4px 0 0;padding-left:18px;}
+  .url-box{
+    background-color:#1E1224;
+    background-image:url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMxNCIgaGVpZ2h0PSI2MzYiIHZpZXdCb3g9IjAgMCAxMzE0IDYzNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEzMTQiIGhlaWdodD0iNjM2IiBmaWxsPSIjMUUxMjI0Ii8+CjxyZWN0IHdpZHRoPSIxMzE0IiBoZWlnaHQ9IjYzNiIgZmlsbD0idXJsKCNwYWludDBfcmFkaWFsXzIzMDFfMzg1NCkiLz4KPGRlZnM+CjxyYWRpYWxHcmFkaWVudCBpZD0icGFpbnQwX3JhZGlhbF8yMzAxXzM4NTQiIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoNjU3IDYzNikgcm90YXRlKC05MCkgc2NhbGUoMzE2LjI4MSA2NTMuNDQ5KSI+CjxzdG9wIHN0b3AtY29sb3I9IiNBODgyRkYiIHN0b3Atb3BhY2l0eT0iMC4xOCIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNBODgyRkYiIHN0b3Atb3BhY2l0eT0iMCIvPgo8L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=");
+    background-size:cover;
+    background-position:center;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    padding:14px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    word-break:break-all;
+    line-height:1.6;
+    min-height:20px;
+  }
+  .url-base{color:#ffffff;}
+  .url-key{color:#1A9E7E;font-weight:600;}
+  .url-val{color:#FF4C00;font-weight:600;}
+  .url-placeholder{color:#ffffff;}
+  .actions{display:flex;gap:10px;margin-top:12px;align-items:center;}
+  button{
+    border:none;
+    border-radius:8px;
+    padding:9px 16px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-primary:disabled{background:#e5e5ea;color:var(--muted);cursor:not-allowed;}
+  .btn-secondary{background:#fff;border:1px solid var(--border);color:var(--text);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .copy-feedback{font-size:12px;color:var(--success);font-weight:600;opacity:0;transition:opacity .15s;}
+  .copy-feedback.show{opacity:1;}
+  table.param-table{width:100%;border-collapse:collapse;margin-top:4px;font-size:12.5px;}
+  table.param-table th, table.param-table td{
+    text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);
+  }
+  table.param-table th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  table.param-table td.k{color:var(--accent-dark);font-family:var(--mono);white-space:nowrap;font-weight:600;}
+  table.param-table td.v{font-family:var(--mono);word-break:break-all;}
+  .empty-note{color:var(--muted);font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="bg-layer" aria-hidden="true">
+<svg width="1920" height="1296" viewBox="0 0 1920 1296" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_2299_3764)">
+<g clip-path="url(#clip1_2299_3764)">
+<path d="M2026.67 0H-106.666V1296H2026.67V0Z" fill="#F8F6F4"/>
+<path d="M1115.56 936C1483.75 936 1782.22 613.645 1782.22 216C1782.22 -181.645 1483.75 -504 1115.56 -504C747.366 -504 448.889 -181.645 448.889 216C448.889 613.645 747.366 936 1115.56 936Z" fill="url(#paint0_radial_2299_3764)"/>
+<path d="M1837.78 732C2156.88 732 2415.56 452.626 2415.56 108C2415.56 -236.626 2156.88 -516 1837.78 -516C1518.68 -516 1260 -236.626 1260 108C1260 452.626 1518.68 732 1837.78 732Z" fill="url(#paint1_radial_2299_3764)"/>
+<path d="M-51.1111 1224C329.352 1224 637.778 890.9 637.778 480C637.778 69.1002 329.352 -264 -51.1111 -264C-431.574 -264 -740 69.1002 -740 480C-740 890.9 -431.574 1224 -51.1111 1224Z" fill="url(#paint2_radial_2299_3764)"/>
+<path d="M1782.22 1920C2199.5 1920 2537.78 1554.66 2537.78 1104C2537.78 653.336 2199.5 288 1782.22 288C1364.94 288 1026.67 653.336 1026.67 1104C1026.67 1554.66 1364.94 1920 1782.22 1920Z" fill="url(#paint3_radial_2299_3764)"/>
+<path d="M93.3336 1872C436.977 1872 715.556 1571.14 715.556 1200C715.556 828.865 436.977 528 93.3336 528C-250.31 528 -528.889 828.865 -528.889 1200C-528.889 1571.14 -250.31 1872 93.3336 1872Z" fill="url(#paint4_radial_2299_3764)"/>
+<path d="M1560 1248C1854.55 1248 2093.33 990.116 2093.33 672C2093.33 353.884 1854.55 96 1560 96C1265.45 96 1026.67 353.884 1026.67 672C1026.67 990.116 1265.45 1248 1560 1248Z" fill="url(#paint5_radial_2299_3764)"/>
+<path d="M960 1320C1279.1 1320 1537.78 1040.63 1537.78 696C1537.78 351.374 1279.1 72 960 72C640.903 72 382.223 351.374 382.223 696C382.223 1040.63 640.903 1320 960 1320Z" fill="url(#paint6_radial_2299_3764)"/>
+</g>
+</g>
+<defs>
+<radialGradient id="paint0_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1115.56 216) scale(666.667 720)">
+<stop stop-color="#FFB8A0" stop-opacity="0.3"/>
+<stop offset="1" stop-color="#FFB8A0" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint1_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1837.78 108) scale(577.778 624)">
+<stop stop-color="#FFD0B0" stop-opacity="0.34"/>
+<stop offset="1" stop-color="#FFD0B0" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint2_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(-51.1111 480) scale(688.889 744)">
+<stop stop-color="#F5E0D0" stop-opacity="0.34"/>
+<stop offset="1" stop-color="#F5E0D0" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint3_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1782.22 1104) scale(755.556 816)">
+<stop stop-color="#FFCDA8" stop-opacity="0.32"/>
+<stop offset="1" stop-color="#FFCDA8" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint4_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(93.3336 1200) scale(622.222 672)">
+<stop stop-color="#F0DCC8" stop-opacity="0.36"/>
+<stop offset="1" stop-color="#F0DCC8" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint5_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1560 672) scale(533.333 576)">
+<stop stop-color="#E6D4DC" stop-opacity="0.24"/>
+<stop offset="1" stop-color="#E6D4DC" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint6_radial_2299_3764" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(960 696) scale(577.778 624)">
+<stop stop-color="white" stop-opacity="0.85"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</radialGradient>
+<clipPath id="clip0_2299_3764">
+<rect width="1920" height="1296" fill="white"/>
+</clipPath>
+<clipPath id="clip1_2299_3764">
+<rect width="1920" height="1296" fill="white"/>
+</clipPath>
+</defs>
+</svg>
+</div>
+<div class="wrap">
+  <header>
+    <h1>Gcore UTM Generator</h1>
+    <p>Build tracked links with Gcore's standard UTM and referral parameters. Values are automatically lowercased and cleaned.</p>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: FORM -->
+    <div>
+      <p class="group-heading">Destination</p>
+      <div class="panel">
+        <label for="destination_url">Destination URL <span class="req">*</span></label>
+        <div class="hint">Include the protocol (https://). Existing query parameters are preserved.</div>
+        <input type="url" id="destination_url" placeholder="https://gcore.com/cdn/">
+      </div>
+
+      <details class="smart-fill">
+        <summary>Describe your campaign — auto-fill the form</summary>
+        <div class="panel smart-fill-panel">
+          <label for="smartFillInput">What are you promoting? <span class="opt">optional</span></label>
+          <div class="hint">Channel, product, audience, region, and timing, in plain language. We match keywords to the fields below — check the results before copying.</div>
+          <textarea id="smartFillInput" rows="3" placeholder="e.g. Email campaign upselling our new WAAP feature to existing clients"></textarea>
+
+          <div style="margin-top:14px;">
+            <label for="smartFillPlacement">Where will the link be placed? <span class="opt">optional</span></label>
+            <div class="hint">The button, image, or link text, and roughly where it sits (e.g. "main CTA button at the bottom of the email").</div>
+            <textarea id="smartFillPlacement" rows="2" placeholder="e.g. Main CTA button at the bottom of the email"></textarea>
+          </div>
+
+          <div class="actions">
+            <button class="btn-primary" id="smartFillBtn" type="button">Fill form</button>
+          </div>
+          <span class="smart-fill-feedback" id="smartFillFeedback"></span>
+        </div>
+      </details>
+
+      <p class="group-heading">Core UTM parameters</p>
+
+      <div class="panel">
+        <label for="utm_source_trigger">utm_source <span class="req">*</span></label>
+        <div class="hint">Where the traffic comes from — the platform or publisher (e.g. google, linkedin, email).</div>
+        <div class="icon-select" id="utm_source_iconselect">
+          <button type="button" class="icon-select-trigger placeholder" id="utm_source_trigger">
+            <span class="icon-select-icon" id="utm_source_trigger_icon"></span>
+            <span class="icon-select-label" id="utm_source_trigger_label">Select source…</span>
+            <span class="icon-select-caret">▾</span>
+          </button>
+          <div class="icon-select-menu" id="utm_source_menu" role="listbox"></div>
+        </div>
+        <div class="custom-input" id="utm_source_custom_wrap">
+          <input type="text" id="utm_source_custom" placeholder="Custom source">
+        </div>
+      </div>
+
+      <div class="panel">
+        <label for="utm_medium">utm_medium <span class="req">*</span></label>
+        <div class="hint">The channel or activity type — how the traffic was driven (e.g. paid_social, newsletter, referral).</div>
+        <select id="utm_medium"></select>
+        <div class="custom-input" id="utm_medium_custom_wrap">
+          <input type="text" id="utm_medium_custom" placeholder="Custom medium">
+        </div>
+      </div>
+
+      <div class="panel">
+        <label for="utm_product">utm_product <span class="req">*</span></label>
+        <div class="hint">Gcore-custom field. Links the campaign to a specific product (p_ prefix), product group, brand/general topic, or industry (i_ prefix).</div>
+        <select id="utm_product"></select>
+        <div class="custom-input" id="utm_product_custom_wrap">
+          <input type="text" id="utm_product_custom" placeholder="Custom product value">
+        </div>
+      </div>
+
+      <div class="panel">
+        <label for="utm_campaign">utm_campaign <span class="req">*</span></label>
+        <div class="hint">The specific campaign, launch, event, offer, or flow. Written manually since names change often. Recommended format: product_or_topic + purpose + period.</div>
+        <input type="text" id="utm_campaign" placeholder="e.g. cdn_leads_q3_2026">
+      </div>
+
+      <div class="panel">
+        <label for="utm_region">utm_region <span class="opt">optional</span></label>
+        <div class="hint">Gcore-custom field. The target region or country — use a region for broad targeting, a country for a specific market, or global if not region-specific.</div>
+        <select id="utm_region"></select>
+        <div class="custom-input" id="utm_region_custom_wrap">
+          <input type="text" id="utm_region_custom" placeholder="Custom region">
+        </div>
+      </div>
+
+      <div class="panel">
+        <label for="utm_content">utm_content <span class="opt">optional</span></label>
+        <div class="hint">Which exact creative, CTA, or link was clicked (e.g. hero_cta, video_15s_v1) — useful when a campaign has multiple versions.</div>
+        <input type="text" id="utm_content" placeholder="e.g. hero_cta">
+      </div>
+
+      <div class="panel">
+        <label for="utm_term">utm_term <span class="opt">optional</span></label>
+        <div class="hint">The keyword, audience, targeting, or segment (e.g. a search keyword or a paid social audience like cto, devops_leads).</div>
+        <input type="text" id="utm_term" placeholder="e.g. devops_leads">
+      </div>
+
+      <div class="actions">
+        <button class="btn-secondary" id="resetBtn" type="button">Reset</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: PREVIEW -->
+    <div>
+      <div class="panel" style="position:sticky; top:20px;">
+        <p class="section-title">Generated URL</p>
+        <div id="errorsBox"></div>
+        <div class="url-box" id="urlBox"><span class="url-placeholder">Fill in the fields to generate a URL.</span></div>
+        <div class="actions">
+          <button class="btn-primary" id="copyBtn" type="button" disabled>Copy URL</button>
+          <span class="copy-feedback" id="copyFeedback">Copied!</span>
+        </div>
+
+        <p class="section-title" style="margin-top:22px;">Parameters included</p>
+        <div id="paramTableWrap"><p class="empty-note">No parameters yet.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // ---------- Icon helpers ----------
+  const GENERIC_ICON_BG = "#B98B62";
+
+  function iconCircle(bg, inner){
+    return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="12" fill="${bg}"/>${inner}</svg>`;
+  }
+  function textGlyph(str, size, fill){
+    return `<text x="12" y="12" text-anchor="middle" dominant-baseline="central" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${size}" fill="${fill || '#fff'}">${str}</text>`;
+  }
+
+  const ICONS = {
+    google: iconCircle("#4285F4", textGlyph("G", 12)),
+    bing: iconCircle("#008373", textGlyph("b", 12)),
+    linkedin: iconCircle("#0A66C2", textGlyph("in", 9)),
+    meta: iconCircle("#0668E1", textGlyph("M", 11)),
+    reddit: iconCircle("#FF4500", '<circle cx="12" cy="13" r="6.5" fill="#fff"/><circle cx="9.3" cy="12.5" r="1.3" fill="#1c1f26"/><circle cx="14.7" cy="12.5" r="1.3" fill="#1c1f26"/>'),
+    twitter: iconCircle("#000000", textGlyph("X", 12)),
+    youtube: iconCircle("#FF0000", '<polygon points="9,7.5 9,16.5 17,12" fill="#fff"/>'),
+    capterra: iconCircle("#FF9D28", textGlyph("C", 12)),
+    g2: iconCircle("#111111", textGlyph("G2", 9, "#FF6A1A")),
+    email: iconCircle(GENERIC_ICON_BG, '<rect x="5" y="7" width="14" height="10" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/><polyline points="5,8 12,13 19,8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'),
+    partner: iconCircle(GENERIC_ICON_BG, '<circle cx="9" cy="12" r="4.2" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="15" cy="12" r="4.2" fill="none" stroke="#fff" stroke-width="1.6"/>'),
+    pr: iconCircle(GENERIC_ICON_BG, '<rect x="5" y="6" width="14" height="9" rx="2" fill="none" stroke="#fff" stroke-width="1.6"/><polygon points="9,15 9,18 12,15" fill="#fff"/><line x1="7.5" y1="9" x2="16.5" y2="9" stroke="#fff" stroke-width="1.2"/><line x1="7.5" y1="11.5" x2="14" y2="11.5" stroke="#fff" stroke-width="1.2"/>'),
+    webinar: iconCircle(GENERIC_ICON_BG, '<rect x="4" y="6" width="16" height="10" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/><line x1="9" y1="19" x2="15" y2="19" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="16" x2="12" y2="19" stroke="#fff" stroke-width="1.6"/><polygon points="10.3,9 10.3,13 14.5,11" fill="#fff"/>'),
+    event: iconCircle(GENERIC_ICON_BG, '<rect x="4.5" y="6.5" width="15" height="13" rx="1.5" fill="none" stroke="#fff" stroke-width="1.6"/><line x1="4.5" y1="10" x2="19.5" y2="10" stroke="#fff" stroke-width="1.6"/><line x1="8" y1="4.5" x2="8" y2="8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><line x1="16" y1="4.5" x2="16" y2="8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>'),
+    blog: iconCircle(GENERIC_ICON_BG, '<path d="M7 4.5h7l3 3v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-14a1 1 0 0 1 1-1z" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M14 4.5v3h3" fill="none" stroke="#fff" stroke-width="1.5"/><line x1="8.5" y1="12" x2="15" y2="12" stroke="#fff" stroke-width="1.3"/><line x1="8.5" y1="15" x2="13.5" y2="15" stroke="#fff" stroke-width="1.3"/>'),
+    custom: iconCircle("#767c8c", '<line x1="12" y1="7" x2="12" y2="17" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><line x1="7" y1="12" x2="17" y2="12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>')
+  };
+
+  // ---------- Config: dropdown options ----------
+  const SOURCE_OPTIONS = [
+    { value: "google", label: "Google", icon: ICONS.google },
+    { value: "bing", label: "Bing", icon: ICONS.bing },
+    { value: "linkedin", label: "LinkedIn", icon: ICONS.linkedin },
+    { value: "meta", label: "Meta", icon: ICONS.meta },
+    { value: "reddit", label: "Reddit", icon: ICONS.reddit },
+    { value: "twitter", label: "Twitter / X", icon: ICONS.twitter },
+    { value: "youtube", label: "YouTube", icon: ICONS.youtube },
+    { value: "capterra", label: "Capterra", icon: ICONS.capterra },
+    { value: "g2", label: "G2", icon: ICONS.g2 },
+    { value: "email", label: "Email", icon: ICONS.email },
+    { value: "partner", label: "Partner", icon: ICONS.partner },
+    { value: "pr", label: "PR", icon: ICONS.pr },
+    { value: "webinar", label: "Webinar", icon: ICONS.webinar },
+    { value: "event", label: "Event", icon: ICONS.event },
+    { value: "blog", label: "Blog", icon: ICONS.blog }
+  ];
+
+  const MEDIUM_OPTIONS = ["paid_search","paid_social","organic_search","organic_social","newsletter","referral","affiliate","display","retargeting","video","outreach","influencer","community","blog_post","co_marketing","guest_post","sponsored_content","onboarding","product_launch","upsell","retention","notification"];
+
+  const PRODUCT_GROUPS = [
+    { label: "Specific product", options: [
+      { value: "p_cdn", label: "CDN" },
+      { value: "p_waap", label: "WAAP" },
+      { value: "p_ddos_protection", label: "DDoS Protection" },
+      { value: "p_dns", label: "DNS" },
+      { value: "p_object_storage", label: "Object Storage" },
+      { value: "p_cloud", label: "Cloud" },
+      { value: "p_bare_metal", label: "Bare Metal" },
+      { value: "p_virtual_machines", label: "Virtual Machines" },
+      { value: "p_kubernetes", label: "Kubernetes" },
+      { value: "p_load_balancer", label: "Load Balancer" },
+      { value: "p_fastedge", label: "FastEdge" },
+      { value: "p_edge_compute", label: "Edge Compute" },
+      { value: "p_streaming", label: "Streaming" },
+      { value: "p_image_optimization", label: "Image Optimization" },
+      { value: "p_ai_inference", label: "AI Inference" },
+      { value: "p_gpu_cloud", label: "GPU Cloud" },
+      { value: "p_instant_bare_metal", label: "Instant Bare Metal" },
+      { value: "p_colocation", label: "Colocation" },
+      { value: "p_openclaw", label: "OpenClaw" },
+      { value: "p_gcore_radar", label: "Gcore Radar" }
+    ] },
+    { label: "Product group", options: [
+      { value: "delivery", label: "Delivery" },
+      { value: "security", label: "Security" },
+      { value: "cloud", label: "Cloud" },
+      { value: "ai", label: "AI" },
+      { value: "edge", label: "Edge" },
+      { value: "hosting", label: "Hosting" },
+      { value: "networking", label: "Networking" },
+      { value: "storage", label: "Storage" },
+      { value: "streaming", label: "Streaming" },
+      { value: "compute", label: "Compute" }
+    ] },
+    { label: "Brand / general", options: [
+      { value: "brand", label: "Brand" },
+      { value: "general", label: "General" },
+      { value: "company", label: "Company" },
+      { value: "event", label: "Event" },
+      { value: "community", label: "Community" },
+      { value: "startup", label: "Startup" },
+      { value: "thought_leadership", label: "Thought Leadership" }
+    ] },
+    { label: "Industry", options: [
+      { value: "i_gaming", label: "Gaming" },
+      { value: "i_igaming", label: "iGaming" },
+      { value: "i_media", label: "Media" },
+      { value: "i_streaming", label: "Streaming" },
+      { value: "i_ecommerce", label: "Ecommerce" },
+      { value: "i_saas", label: "SaaS" },
+      { value: "i_fintech", label: "Fintech" },
+      { value: "i_hosting", label: "Hosting" },
+      { value: "i_telecom", label: "Telecom" },
+      { value: "i_software", label: "Software" },
+      { value: "i_enterprise", label: "Enterprise" },
+      { value: "i_startups", label: "Startups" },
+      { value: "i_public_sector", label: "Public Sector" },
+      { value: "i_education", label: "Education" },
+      { value: "i_healthcare", label: "Healthcare" }
+    ] }
+  ];
+
+  const REGION_GROUPS = [
+    { label: "Region", options: [
+      { value: "northamerica", label: "North America" },
+      { value: "europe", label: "Europe" },
+      { value: "latam", label: "LATAM" },
+      { value: "emea", label: "EMEA" },
+      { value: "asia", label: "Asia" },
+      { value: "sea", label: "Southeast Asia" },
+      { value: "mena", label: "MENA" },
+      { value: "global", label: "Global" },
+      { value: "dach", label: "DACH" },
+      { value: "nordics", label: "Nordics" },
+      { value: "baltics", label: "Baltics" },
+      { value: "benelux", label: "Benelux" },
+      { value: "cee", label: "CEE" },
+      { value: "apac", label: "APAC" }
+    ] },
+    { label: "Country", options: [
+      { value: "af", label: "Afghanistan" },
+      { value: "al", label: "Albania" },
+      { value: "dz", label: "Algeria" },
+      { value: "ad", label: "Andorra" },
+      { value: "ao", label: "Angola" },
+      { value: "ar", label: "Argentina" },
+      { value: "am", label: "Armenia" },
+      { value: "au", label: "Australia" },
+      { value: "at", label: "Austria" },
+      { value: "az", label: "Azerbaijan" },
+      { value: "bh", label: "Bahrain" },
+      { value: "bd", label: "Bangladesh" },
+      { value: "by", label: "Belarus" },
+      { value: "be", label: "Belgium" },
+      { value: "bo", label: "Bolivia" },
+      { value: "ba", label: "Bosnia and Herzegovina" },
+      { value: "br", label: "Brazil" },
+      { value: "bn", label: "Brunei" },
+      { value: "bg", label: "Bulgaria" },
+      { value: "kh", label: "Cambodia" },
+      { value: "cm", label: "Cameroon" },
+      { value: "ca", label: "Canada" },
+      { value: "cl", label: "Chile" },
+      { value: "cn", label: "China" },
+      { value: "co", label: "Colombia" },
+      { value: "cr", label: "Costa Rica" },
+      { value: "hr", label: "Croatia" },
+      { value: "cu", label: "Cuba" },
+      { value: "cy", label: "Cyprus" },
+      { value: "cz", label: "Czech Republic" },
+      { value: "dk", label: "Denmark" },
+      { value: "do", label: "Dominican Republic" },
+      { value: "ec", label: "Ecuador" },
+      { value: "eg", label: "Egypt" },
+      { value: "sv", label: "El Salvador" },
+      { value: "ee", label: "Estonia" },
+      { value: "et", label: "Ethiopia" },
+      { value: "fi", label: "Finland" },
+      { value: "fr", label: "France" },
+      { value: "ge", label: "Georgia" },
+      { value: "de", label: "Germany" },
+      { value: "gh", label: "Ghana" },
+      { value: "gr", label: "Greece" },
+      { value: "gt", label: "Guatemala" },
+      { value: "hn", label: "Honduras" },
+      { value: "hk", label: "Hong Kong" },
+      { value: "hu", label: "Hungary" },
+      { value: "is", label: "Iceland" },
+      { value: "in", label: "India" },
+      { value: "id", label: "Indonesia" },
+      { value: "ir", label: "Iran" },
+      { value: "iq", label: "Iraq" },
+      { value: "ie", label: "Ireland" },
+      { value: "il", label: "Israel" },
+      { value: "it", label: "Italy" },
+      { value: "ci", label: "Ivory Coast" },
+      { value: "jm", label: "Jamaica" },
+      { value: "jp", label: "Japan" },
+      { value: "jo", label: "Jordan" },
+      { value: "kz", label: "Kazakhstan" },
+      { value: "ke", label: "Kenya" },
+      { value: "kw", label: "Kuwait" },
+      { value: "kg", label: "Kyrgyzstan" },
+      { value: "la", label: "Laos" },
+      { value: "lv", label: "Latvia" },
+      { value: "lb", label: "Lebanon" },
+      { value: "li", label: "Liechtenstein" },
+      { value: "lt", label: "Lithuania" },
+      { value: "lu", label: "Luxembourg" },
+      { value: "mo", label: "Macau" },
+      { value: "my", label: "Malaysia" },
+      { value: "mv", label: "Maldives" },
+      { value: "mt", label: "Malta" },
+      { value: "mx", label: "Mexico" },
+      { value: "md", label: "Moldova" },
+      { value: "mc", label: "Monaco" },
+      { value: "mn", label: "Mongolia" },
+      { value: "me", label: "Montenegro" },
+      { value: "ma", label: "Morocco" },
+      { value: "mz", label: "Mozambique" },
+      { value: "mm", label: "Myanmar" },
+      { value: "np", label: "Nepal" },
+      { value: "nl", label: "Netherlands" },
+      { value: "nz", label: "New Zealand" },
+      { value: "ni", label: "Nicaragua" },
+      { value: "ng", label: "Nigeria" },
+      { value: "mk", label: "North Macedonia" },
+      { value: "no", label: "Norway" },
+      { value: "om", label: "Oman" },
+      { value: "pk", label: "Pakistan" },
+      { value: "pa", label: "Panama" },
+      { value: "pg", label: "Papua New Guinea" },
+      { value: "py", label: "Paraguay" },
+      { value: "pe", label: "Peru" },
+      { value: "ph", label: "Philippines" },
+      { value: "pl", label: "Poland" },
+      { value: "pt", label: "Portugal" },
+      { value: "qa", label: "Qatar" },
+      { value: "ro", label: "Romania" },
+      { value: "rw", label: "Rwanda" },
+      { value: "sm", label: "San Marino" },
+      { value: "sa", label: "Saudi Arabia" },
+      { value: "sn", label: "Senegal" },
+      { value: "rs", label: "Serbia" },
+      { value: "sg", label: "Singapore" },
+      { value: "sk", label: "Slovakia" },
+      { value: "si", label: "Slovenia" },
+      { value: "za", label: "South Africa" },
+      { value: "kr", label: "South Korea" },
+      { value: "es", label: "Spain" },
+      { value: "lk", label: "Sri Lanka" },
+      { value: "sd", label: "Sudan" },
+      { value: "se", label: "Sweden" },
+      { value: "ch", label: "Switzerland" },
+      { value: "sy", label: "Syria" },
+      { value: "tw", label: "Taiwan" },
+      { value: "tj", label: "Tajikistan" },
+      { value: "tz", label: "Tanzania" },
+      { value: "th", label: "Thailand" },
+      { value: "tn", label: "Tunisia" },
+      { value: "tr", label: "Turkey" },
+      { value: "tm", label: "Turkmenistan" },
+      { value: "ug", label: "Uganda" },
+      { value: "ua", label: "Ukraine" },
+      { value: "ae", label: "United Arab Emirates" },
+      { value: "uk", label: "United Kingdom" },
+      { value: "us", label: "United States" },
+      { value: "uy", label: "Uruguay" },
+      { value: "uz", label: "Uzbekistan" },
+      { value: "ve", label: "Venezuela" },
+      { value: "vn", label: "Vietnam" },
+      { value: "ye", label: "Yemen" },
+      { value: "zm", label: "Zambia" },
+      { value: "zw", label: "Zimbabwe" }
+    ] }
+  ];
+
+  const CUSTOM_VALUE = "__custom__";
+
+  // ---------- Helpers ----------
+  function sanitize(str){
+    if(!str) return "";
+    return str
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_\-]/g, "");
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, ch => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[ch]));
+  }
+
+  function makeOption(value, label){
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label !== undefined ? label : value;
+    return opt;
+  }
+
+  // Options can be a plain string (value === label) or { value, label }
+  // so we can show a human-readable name while keeping the raw UTM value.
+  function optValue(o){ return typeof o === "string" ? o : o.value; }
+  function optLabel(o){ return typeof o === "string" ? o : o.label; }
+
+  function populateFlatSelect(select, values, placeholder){
+    select.appendChild(makeOption("", placeholder));
+    values.forEach(v => select.appendChild(makeOption(optValue(v), optLabel(v))));
+    select.appendChild(makeOption(CUSTOM_VALUE, "Custom…"));
+  }
+
+  function populateGroupedSelect(select, groups, placeholder){
+    select.appendChild(makeOption("", placeholder));
+    groups.forEach(g => {
+      const og = document.createElement("optgroup");
+      og.label = g.label;
+      g.options.forEach(v => og.appendChild(makeOption(optValue(v), optLabel(v))));
+      select.appendChild(og);
+    });
+    select.appendChild(makeOption(CUSTOM_VALUE, "Custom…"));
+  }
+
+  // Wire a select + its custom text input: returns sanitized value
+  function wireCustomSelect(selectId){
+    const select = document.getElementById(selectId);
+    const customWrap = document.getElementById(selectId + "_custom_wrap");
+    const customInput = document.getElementById(selectId + "_custom");
+    select.addEventListener("change", () => {
+      if(select.value === CUSTOM_VALUE){
+        customWrap.classList.add("show");
+        customInput.focus();
+      } else {
+        customWrap.classList.remove("show");
+      }
+      render();
+    });
+    customInput.addEventListener("input", render);
+    return function getValue(){
+      if(select.value === CUSTOM_VALUE) return sanitize(customInput.value);
+      return sanitize(select.value);
+    };
+  }
+
+  // Wire an icon dropdown + its custom text input: returns sanitized value
+  function wireIconSelect(id, options, placeholder){
+    const trigger = document.getElementById(id + "_trigger");
+    const triggerIcon = document.getElementById(id + "_trigger_icon");
+    const triggerLabel = document.getElementById(id + "_trigger_label");
+    const menu = document.getElementById(id + "_menu");
+    const customWrap = document.getElementById(id + "_custom_wrap");
+    const customInput = document.getElementById(id + "_custom");
+
+    let selectedValue = "";
+    const allOptions = options.concat([{ value: CUSTOM_VALUE, label: "Custom…", icon: ICONS.custom }]);
+
+    function closeMenu(){
+      menu.classList.remove("open");
+      document.removeEventListener("click", onDocClick);
+    }
+    function onDocClick(e){
+      if(!trigger.contains(e.target) && !menu.contains(e.target)) closeMenu();
+    }
+    function openMenu(){
+      menu.classList.add("open");
+      document.addEventListener("click", onDocClick);
+    }
+
+    function selectOption(opt){
+      selectedValue = opt.value;
+      triggerIcon.innerHTML = opt.icon;
+      triggerLabel.textContent = opt.label;
+      trigger.classList.remove("placeholder");
+      closeMenu();
+      if(selectedValue === CUSTOM_VALUE){
+        customWrap.classList.add("show");
+        customInput.focus();
+      } else {
+        customWrap.classList.remove("show");
+      }
+      render();
+    }
+
+    allOptions.forEach(opt => {
+      const item = document.createElement("div");
+      item.className = "icon-select-option" + (opt.value === CUSTOM_VALUE ? " is-custom" : "");
+      item.setAttribute("role", "option");
+      item.innerHTML = `<span class="icon-select-icon">${opt.icon}</span><span>${opt.label}</span>`;
+      item.addEventListener("click", () => selectOption(opt));
+      menu.appendChild(item);
+    });
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if(menu.classList.contains("open")) closeMenu(); else openMenu();
+    });
+
+    customInput.addEventListener("input", render);
+
+    return {
+      getValue(){
+        if(selectedValue === CUSTOM_VALUE) return sanitize(customInput.value);
+        return sanitize(selectedValue);
+      },
+      reset(){
+        selectedValue = "";
+        triggerIcon.innerHTML = "";
+        triggerLabel.textContent = placeholder;
+        trigger.classList.add("placeholder");
+        customWrap.classList.remove("show");
+        customInput.value = "";
+      },
+      setValue(value){
+        const opt = allOptions.find(o => o.value === value);
+        if(opt) selectOption(opt);
+      }
+    };
+  }
+
+  // ---------- Populate selects ----------
+  populateFlatSelect(document.getElementById("utm_medium"), MEDIUM_OPTIONS, "Select medium…");
+  populateGroupedSelect(document.getElementById("utm_product"), PRODUCT_GROUPS, "Select product…");
+  populateGroupedSelect(document.getElementById("utm_region"), REGION_GROUPS, "Select region…");
+
+  const sourceCtrl = wireIconSelect("utm_source", SOURCE_OPTIONS, "Select source…");
+  const getSource = () => sourceCtrl.getValue();
+  const getMedium = wireCustomSelect("utm_medium");
+  const getProduct = wireCustomSelect("utm_product");
+  const getRegion = wireCustomSelect("utm_region");
+
+  // Plain text fields (open-ended, written manually — like utm_campaign)
+  const textIds = ["destination_url","utm_campaign","utm_content","utm_term"];
+  textIds.forEach(id => document.getElementById(id).addEventListener("input", render));
+
+  // ---------- Smart fill: keyword matching, not real AI ----------
+  // Scans the free-text description for words/phrases that match our known
+  // source/medium/product/region/term vocab (plus a few common aliases) and
+  // fills in whichever fields it can confidently match.
+  function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function hasKeyword(text, kw){
+    return new RegExp("\\b" + escapeRegex(kw) + "\\b", "i").test(text);
+  }
+  function matchKeyword(text, pool){
+    let best = null, bestLen = 0;
+    pool.forEach(entry => {
+      entry.keywords.forEach(kw => {
+        if(kw.length > bestLen && hasKeyword(text, kw)){
+          best = entry; bestLen = kw.length;
+        }
+      });
+    });
+    return best;
+  }
+
+  const SOURCE_ALIASES = {
+    meta: ["facebook", "instagram", "fb ads", "ig ads"],
+    twitter: ["x ads", "x.com"],
+    pr: ["press release", "press coverage", "media coverage"]
+  };
+  const SOURCE_POOL = SOURCE_OPTIONS.map(o => ({
+    value: o.value,
+    keywords: [o.value, o.label.toLowerCase(), ...(SOURCE_ALIASES[o.value] || [])]
+  }));
+
+  const MEDIUM_ALIASES = {
+    paid_social: ["paid social", "social ads", "linkedin ads", "facebook ads", "instagram ads"],
+    paid_search: ["paid search", "search ads", "google ads", "ppc"],
+    organic_search: ["organic search", "seo"],
+    organic_social: ["organic social"],
+    display: ["display ads", "banner ads"],
+    retargeting: ["retargeting", "remarketing"],
+    co_marketing: ["co-marketing", "co marketing"],
+    guest_post: ["guest post"],
+    sponsored_content: ["sponsored content"],
+    product_launch: ["product launch"],
+    blog_post: ["blog post"]
+  };
+  const MEDIUM_POOL = MEDIUM_OPTIONS.map(v => ({
+    value: v,
+    keywords: [v.replace(/_/g, " "), ...(MEDIUM_ALIASES[v] || [])]
+  }));
+
+  const PRODUCT_ALIASES = {
+    p_waap: ["waap", "web application firewall", "waf"],
+    p_ddos_protection: ["ddos", "ddos protection"],
+    p_object_storage: ["object storage"],
+    p_gpu_cloud: ["gpu", "gpu cloud"],
+    p_ai_inference: ["inference", "ai inference"],
+    p_fastedge: ["fastedge", "edge functions"],
+    i_igaming: ["igaming", "online gambling", "betting"],
+    i_saas: ["saas", "software as a service"]
+  };
+  const PRODUCT_POOL = [];
+  PRODUCT_GROUPS.forEach(g => g.options.forEach(o => {
+    const bare = o.value.replace(/^p_|^i_/, "").replace(/_/g, " ");
+    PRODUCT_POOL.push({
+      value: o.value,
+      bareLabel: bare,
+      keywords: [o.label.toLowerCase(), bare, ...(PRODUCT_ALIASES[o.value] || [])]
+    });
+  }));
+
+  // Match on the full name, not the raw code — codes like "in" (India) or
+  // "no" (Norway) are common English words and would false-match otherwise.
+  const REGION_ALIASES = {
+    northamerica: ["north america", "north american"],
+    latam: ["latin america"],
+    sea: ["south east asia"],
+    mena: ["middle east"],
+    apac: ["asia pacific", "asia-pacific"],
+    cee: ["central and eastern europe", "eastern europe"],
+    nordics: ["nordic", "scandinavia"],
+    baltics: ["baltic states", "baltic region"],
+    dach: ["germany austria switzerland"],
+    global: ["worldwide"],
+    us: ["usa", "america"],
+    uk: ["britain", "great britain"],
+    nl: ["holland"],
+    cz: ["czechia"],
+    ae: ["uae"],
+    kr: ["korea"]
+  };
+  const REGION_POOL = [];
+  REGION_GROUPS.forEach(g => g.options.forEach(o => {
+    const value = optValue(o);
+    const label = optLabel(o);
+    REGION_POOL.push({ value, keywords: [label.toLowerCase(), ...(REGION_ALIASES[value] || [])] });
+  }));
+
+  const TERM_POOL = [
+    { value: "cdn_provider", keywords: ["cdn provider"] },
+    { value: "ddos_protection", keywords: ["ddos protection"] },
+    { value: "cloud_gpu", keywords: ["cloud gpu"] },
+    { value: "video_streaming_platform", keywords: ["video streaming platform"] },
+    { value: "web_application_firewall", keywords: ["web application firewall"] },
+    { value: "edge_compute", keywords: ["edge compute"] },
+    { value: "devops_leads", keywords: ["devops leads", "devops", "dev ops"] },
+    { value: "security_leaders", keywords: ["security leaders", "security teams"] },
+    { value: "startup_founders", keywords: ["startup founders", "founders"] },
+    { value: "gaming_companies", keywords: ["gaming companies", "game studios"] },
+    { value: "media_companies", keywords: ["media companies"] },
+    { value: "platform_engineers", keywords: ["platform engineers", "platform team"] },
+    { value: "cto", keywords: ["cto", "chief technology officer"] },
+    { value: "cio", keywords: ["cio", "chief information officer"] },
+    { value: "ciso", keywords: ["ciso", "chief information security officer"] }
+  ];
+
+  const PURPOSE_POOL = [
+    { value: "launch", keywords: ["launch", "relaunch"] },
+    { value: "leads", keywords: ["leads", "lead gen", "lead generation"] },
+    { value: "awareness", keywords: ["awareness"] },
+    { value: "onboarding", keywords: ["onboarding"] },
+    { value: "followup", keywords: ["follow up", "follow-up", "followup"] },
+    { value: "retention", keywords: ["retention"] },
+    { value: "upsell", keywords: ["upsell"] },
+    { value: "trial", keywords: ["trial"] },
+    { value: "demo", keywords: ["demo", "book a demo"] },
+    { value: "signups", keywords: ["signup", "signups", "sign up", "sign-ups"] },
+    { value: "webinar", keywords: ["webinar"] },
+    { value: "promo", keywords: ["promo", "promotion", "offer"] }
+  ];
+
+  // Content matching runs in two tiers: an explicit match (the person named
+  // the actual element — "main CTA", "banner image") always wins over a
+  // purely positional hint ("at the bottom of the email"), since naming the
+  // element is the stronger signal.
+  const CONTENT_EXPLICIT_POOL = [
+    { value: "main_cta", keywords: ["main cta", "main call to action", "primary cta", "primary button"] },
+    { value: "hero_cta", keywords: ["hero cta"] },
+    { value: "secondary_cta", keywords: ["secondary cta", "secondary button"] },
+    { value: "footer_cta", keywords: ["footer cta"] },
+    { value: "header_logo", keywords: ["header logo", "logo link"] },
+    { value: "hero_image", keywords: ["hero image", "banner image"] },
+    { value: "text_link", keywords: ["text link", "inline link", "link in the text", "paragraph link"] },
+    { value: "pricing_cta", keywords: ["pricing cta", "pricing button"] },
+    { value: "docs_cta", keywords: ["docs cta", "documentation link", "docs link"] },
+    { value: "start_button", keywords: ["start button", "get started button"] },
+    { value: "book_demo_button", keywords: ["book demo button", "demo button", "book a demo"] },
+    { value: "watch_recording_cta", keywords: ["watch recording", "recording link"] },
+    { value: "navbar_cta", keywords: ["navbar cta", "nav button", "navigation button", "menu button"] },
+    { value: "pricing_table_cta", keywords: ["pricing table"] },
+    { value: "footer_link", keywords: ["footer link"] },
+    { value: "banner_cta", keywords: ["banner cta", "banner button"] },
+    { value: "popup_cta", keywords: ["popup", "pop-up", "modal"] },
+    { value: "sidebar_link", keywords: ["sidebar link", "sidebar button"] },
+    { value: "comparison_table_cta", keywords: ["comparison table"] },
+    { value: "case_study_card", keywords: ["case study card"] },
+    { value: "related_article_link", keywords: ["related article"] },
+    { value: "article_body_link", keywords: ["article body", "body of the article", "within the article"] },
+    { value: "author_bio_link", keywords: ["author bio"] },
+    { value: "partner_page_cta", keywords: ["partner page"] },
+    { value: "resource_card", keywords: ["resource card"] },
+    { value: "quote_link", keywords: ["quote link"] },
+    { value: "case_study_cta", keywords: ["case study cta", "case study button"] },
+    { value: "webinar_description_link", keywords: ["webinar description"] },
+    { value: "registration_cta", keywords: ["registration cta", "register button", "sign up button", "registration button"] },
+    { value: "static_image_v1", keywords: ["static image", "image ad"] },
+    { value: "video_15s_v1", keywords: ["15 second video", "15s video"] },
+    { value: "video_30s_v1", keywords: ["30 second video", "30s video"] },
+    { value: "carousel_v1", keywords: ["carousel ad", "carousel"] },
+    { value: "pricing_ad", keywords: ["pricing ad"] },
+    { value: "case_study_ad", keywords: ["case study ad"] },
+    { value: "founder_quote_ad", keywords: ["founder quote"] }
+  ];
+  const CONTENT_POSITIONAL_POOL = [
+    { value: "footer_cta", keywords: ["bottom of the email", "bottom of email", "end of the email", "footer of the email"] },
+    { value: "hero_cta", keywords: ["top of the email", "header of the email", "beginning of the email"] },
+    { value: "hero_image", keywords: ["main image", "top banner"] },
+    { value: "text_link", keywords: ["in the text", "in the paragraph"] }
+  ];
+  function matchContent(text){
+    return matchKeyword(text, CONTENT_EXPLICIT_POOL) || matchKeyword(text, CONTENT_POSITIONAL_POOL);
+  }
+
+  function detectPeriod(text){
+    let m = text.match(/\bq([1-4])[\s\-\/]?(\d{2,4})\b/i);
+    if(m){
+      const year = m[2].length === 2 ? "20" + m[2] : m[2];
+      return "q" + m[1] + "_" + year;
+    }
+    m = text.match(/\b(20\d{2})\b/);
+    if(m) return m[1];
+    if(/black\s?friday/i.test(text)) return "black_friday";
+    if(/cyber\s?monday/i.test(text)) return "cyber_monday";
+    return "";
+  }
+
+  const CAMPAIGN_STOPWORDS = new Set(["the","a","an","for","to","of","in","on","and","with","our","we","are","is","this","that","campaign","targeting","target","promoting","promote"]);
+
+  // If the person already typed an explicit campaign name/slug — called out
+  // ("campaign is X", "name it X") or a slug-looking token with a number in
+  // it (e.g. "edge-platform-25k") — use that verbatim instead of guessing.
+  function findExplicitCampaign(text){
+    let m = text.match(/campaign\s+(?:is\s+)?(?:called|named)\s+["']?([a-z0-9][a-z0-9_\-]*)["']?/i);
+    if(m) return sanitize(m[1]);
+    m = text.match(/campaign\s+is\s+["']?([a-z0-9][a-z0-9_\-]*)["']?/i);
+    if(m) return sanitize(m[1]);
+    m = text.match(/(?:name it|call it)\s+["']?([a-z0-9][a-z0-9_\-]*)["']?/i);
+    if(m) return sanitize(m[1]);
+    m = text.match(/["']([a-z0-9][a-z0-9_\-]{2,})["']/i);
+    if(m) return sanitize(m[1]);
+    const slugLike = (text.match(/\b[a-z][a-z0-9]*(?:[-_][a-z0-9]+)+\b/gi) || [])
+      .filter(tok => /\d/.test(tok));
+    if(slugLike.length){
+      slugLike.sort((a, b) => b.length - a.length);
+      return sanitize(slugLike[0]);
+    }
+    return "";
+  }
+
+  function buildCampaignSlug(text, productPoolMatch){
+    const explicit = findExplicitCampaign(text);
+    if(explicit) return explicit;
+    const purpose = matchKeyword(text, PURPOSE_POOL);
+    const period = detectPeriod(text);
+    const productSlug = productPoolMatch ? sanitize(productPoolMatch.bareLabel || productPoolMatch.value) : "";
+    const parts = [productSlug, purpose ? purpose.value : "", period].filter(Boolean);
+    if(parts.length) return sanitize(parts.join("_"));
+    const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
+      .filter(w => w && !CAMPAIGN_STOPWORDS.has(w));
+    return sanitize(words.slice(0, 4).join("_"));
+  }
+
+  function setSelectValue(id, value){
+    document.getElementById(id).value = value;
+    document.getElementById(id + "_custom_wrap").classList.remove("show");
+  }
+
+  // If no medium phrase matched directly (e.g. "run ads on LinkedIn" instead
+  // of "LinkedIn ads"), but the source is a known ad platform and the text
+  // mentions ads/advertising anywhere, infer the platform's usual medium.
+  const PLATFORM_DEFAULT_MEDIUM = {
+    google: "paid_search", bing: "paid_search",
+    linkedin: "paid_social", meta: "paid_social", reddit: "paid_social", twitter: "paid_social"
+  };
+  function inferMediumFromSource(text, sourceValue){
+    if(!PLATFORM_DEFAULT_MEDIUM[sourceValue]) return null;
+    if(!/\bads?\b|\badvertising\b|\bsponsored\b|\bpromoted\b|\bppc\b/i.test(text)) return null;
+    return PLATFORM_DEFAULT_MEDIUM[sourceValue];
+  }
+
+  document.getElementById("smartFillBtn").addEventListener("click", () => {
+    const description = document.getElementById("smartFillInput").value.trim();
+    const placement = document.getElementById("smartFillPlacement").value.trim();
+    const feedback = document.getElementById("smartFillFeedback");
+    const text = (description + " " + placement).trim();
+    if(!text){
+      feedback.textContent = "Fill in at least one of the questions above first.";
+      feedback.className = "smart-fill-feedback";
+      return;
+    }
+
+    const filled = [];
+
+    const sourceMatch = matchKeyword(text, SOURCE_POOL);
+    if(sourceMatch){ sourceCtrl.setValue(sourceMatch.value); filled.push("utm_source"); }
+
+    const mediumMatch = matchKeyword(text, MEDIUM_POOL);
+    if(mediumMatch){
+      setSelectValue("utm_medium", mediumMatch.value);
+      filled.push("utm_medium");
+    } else if(sourceMatch){
+      const inferredMedium = inferMediumFromSource(text, sourceMatch.value);
+      if(inferredMedium){ setSelectValue("utm_medium", inferredMedium); filled.push("utm_medium"); }
+    }
+
+    const productMatch = matchKeyword(text, PRODUCT_POOL);
+    if(productMatch){ setSelectValue("utm_product", productMatch.value); filled.push("utm_product"); }
+
+    const regionMatch = matchKeyword(text, REGION_POOL);
+    if(regionMatch){ setSelectValue("utm_region", regionMatch.value); filled.push("utm_region"); }
+
+    const termMatch = matchKeyword(text, TERM_POOL);
+    if(termMatch){ document.getElementById("utm_term").value = termMatch.value; filled.push("utm_term"); }
+
+    const contentMatch = matchContent(text);
+    if(contentMatch){ document.getElementById("utm_content").value = contentMatch.value; filled.push("utm_content"); }
+
+    const campaignSlug = buildCampaignSlug(text, productMatch);
+    if(campaignSlug){ document.getElementById("utm_campaign").value = campaignSlug; filled.push("utm_campaign"); }
+
+    render();
+
+    feedback.textContent = filled.length
+      ? "Filled: " + filled.join(", ") + "."
+      : "Couldn't confidently match anything — try naming the channel, product, region, or where the link sits.";
+    feedback.className = "smart-fill-feedback" + (filled.length ? " ok" : "");
+  });
+
+  function buildDestinationUrl(raw){
+    let value = (raw || "").trim();
+    if(!value) return null;
+    if(!/^https?:\/\//i.test(value)) value = "https://" + value;
+    try{
+      return new URL(value);
+    } catch(e){
+      return null;
+    }
+  }
+
+  let currentUrl = "";
+
+  // Bold + orange out any field that currently has a value, so a filled-in
+  // field pops immediately instead of blending in with the empty ones.
+  function updateHighlights(){
+    ["destination_url", "utm_campaign", "utm_content", "utm_term",
+      "utm_source_custom", "utm_medium_custom", "utm_product_custom", "utm_region_custom"
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.toggle("has-value", el.value.trim() !== "");
+    });
+    ["utm_medium", "utm_product", "utm_region"].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.toggle("has-value", el.value !== "");
+    });
+  }
+
+  function render(){
+    const errors = [];
+    const rawDest = document.getElementById("destination_url").value.trim();
+    const url = buildDestinationUrl(rawDest);
+    if(!rawDest) errors.push("Destination URL is required.");
+    else if(!url) errors.push("Destination URL is not valid.");
+
+    const source = getSource();
+    const medium = getMedium();
+    const product = getProduct();
+    const campaign = sanitize(document.getElementById("utm_campaign").value);
+
+    if(!source) errors.push("utm_source is required.");
+    if(!medium) errors.push("utm_medium is required.");
+    if(!product) errors.push("utm_product is required.");
+    if(!campaign) errors.push("utm_campaign is required.");
+
+    updateHighlights();
+
+    const errorsBox = document.getElementById("errorsBox");
+    const urlBox = document.getElementById("urlBox");
+    const copyBtn = document.getElementById("copyBtn");
+    const paramTableWrap = document.getElementById("paramTableWrap");
+
+    errorsBox.innerHTML = errors.length
+      ? '<div class="errors">Fix the following before copying the link:<ul>' +
+        errors.map(e => "<li>" + e + "</li>").join("") + "</ul></div>"
+      : "";
+
+    // Always compute the current param values, valid or not, so the preview
+    // updates live — only the Copy button is gated on validity.
+    const params = [
+      ["utm_source", source],
+      ["utm_medium", medium],
+      ["utm_campaign", campaign],
+      ["utm_content", sanitize(document.getElementById("utm_content").value)],
+      ["utm_term", sanitize(document.getElementById("utm_term").value)],
+      ["utm_product", product],
+      ["utm_region", getRegion()]
+    ];
+    const filledParams = params.filter(([, v]) => v);
+
+    let baseText, displayPairs;
+    if(url){
+      filledParams.forEach(([key, val]) => url.searchParams.set(key, val));
+      baseText = url.origin + url.pathname;
+      displayPairs = Array.from(url.searchParams.entries());
+      currentUrl = url.toString();
+    } else {
+      baseText = rawDest;
+      displayPairs = filledParams;
+      currentUrl = "";
+    }
+
+    if(!baseText && displayPairs.length === 0){
+      urlBox.innerHTML = '<span class="url-placeholder">Fill in the fields to generate a URL.</span>';
+    } else {
+      let html = baseText
+        ? `<span class="url-base">${escapeHtml(baseText)}</span>`
+        : '<span class="url-placeholder">your-domain.com</span>';
+      displayPairs.forEach(([k, v], i) => {
+        html += `<span class="url-key">${i === 0 ? "?" : "&"}${escapeHtml(k)}=</span><span class="url-val">${escapeHtml(v)}</span>`;
+      });
+      urlBox.innerHTML = html;
+    }
+
+    copyBtn.disabled = errors.length > 0;
+
+    if(filledParams.length){
+      paramTableWrap.innerHTML = '<table class="param-table"><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody>' +
+        filledParams.map(([k, v]) => `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`).join("") +
+        "</tbody></table>";
+    } else {
+      paramTableWrap.innerHTML = '<p class="empty-note">No parameters yet.</p>';
+    }
+  }
+
+  document.getElementById("copyBtn").addEventListener("click", async () => {
+    if(!currentUrl) return;
+    try{
+      await navigator.clipboard.writeText(currentUrl);
+    } catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = currentUrl;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    const fb = document.getElementById("copyFeedback");
+    fb.classList.add("show");
+    setTimeout(() => fb.classList.remove("show"), 1500);
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    textIds.forEach(id => document.getElementById(id).value = "");
+    sourceCtrl.reset();
+    ["utm_medium","utm_product","utm_region"].forEach(id => {
+      document.getElementById(id).value = "";
+      document.getElementById(id + "_custom").value = "";
+      document.getElementById(id + "_custom_wrap").classList.remove("show");
+    });
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

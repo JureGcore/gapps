@@ -61,7 +61,10 @@ def fetch_rendered(url, wait_ms=1500):
 
     start = time.perf_counter()
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        # --no-sandbox: Chromium's sandbox needs kernel namespace features
+        # that containers running as root typically don't grant; without
+        # this it hangs/crashes on launch instead of erroring cleanly.
+        browser = pw.chromium.launch(args=["--no-sandbox"])
         try:
             page = browser.new_page(user_agent="Mozilla/5.0 (compatible; SEOKeywordCheck/1.0)")
             response = page.goto(url, wait_until="networkidle", timeout=30000)

@@ -44,8 +44,8 @@ jobs:
           image: ${{ env.IMAGE }}
           listening-port: 8080
           flavor: 1140mCPU-2048MiB
-          timeout: 600
-          scale-min: 0
+          timeout: 180
+          scale-min: 1
           scale-max: 2
 
       - name: Show deployed address

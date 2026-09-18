@@ -7,10 +7,10 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# The base image's pre-baked browsers don't match what this pip-installed
-# playwright build expects at launch (missing chromium_headless_shell) -
-# install fresh to guarantee the browsers actually match the driver.
-RUN playwright install chromium
+# "chromium" and "chromium-headless-shell" are two SEPARATE install
+# targets - installing chromium alone doesn't fetch the headless-shell
+# build that a default headless launch() actually looks for.
+RUN playwright install chromium chromium-headless-shell
 
 COPY seo_checker ./seo_checker
 COPY seo_keyword_check.py .

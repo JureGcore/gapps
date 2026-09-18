@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Title &amp; Description Length Checker</title>
+<style>
+  :root {
+    --green: #1fb15f;
+    --orange: #f2a71b;
+    --red: #e5484d;
+    --ink: #1c2430;
+    --muted: #6b7684;
+    --border: #e6e9ee;
+    --bg: #f4f6f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .topbar {
+    background: linear-gradient(135deg, #1c2430, #364152);
+    color: #fff;
+    padding: 28px 24px;
+    text-align: center;
+    position: relative;
+  }
+  .topbar h1 { margin: 0 0 4px; font-size: 26px; }
+  .topbar p { margin: 0; color: #b7c0cc; font-size: 14px; }
+  .back-link {
+    position: absolute; left: 24px; top: 32px; color: #b7c0cc; font-size: 13px;
+    text-decoration: none;
+  }
+  .back-link:hover { color: #fff; }
+
+  .wrap { max-width: 720px; margin: -20px auto 40px; padding: 0 20px; }
+
+  .card {
+    background: #fff; border-radius: 14px; box-shadow: 0 8px 24px rgba(20,30,45,0.06);
+    padding: 20px 24px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .card label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .03em; }
+  .card input[type=text], .card textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; outline: none; resize: vertical;
+  }
+  .card input[type=text]:focus, .card textarea:focus { border-color: #4a7dff; box-shadow: 0 0 0 3px rgba(74,125,255,0.15); }
+  .card textarea { min-height: 70px; }
+
+  .meta-row { display: flex; align-items: center; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+  .meta-count { font-size: 13px; color: var(--muted); }
+  .meta-count b { color: var(--ink); }
+  .status-pill {
+    display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .status-pill.green { background: var(--green); }
+  .status-pill.orange { background: var(--orange); }
+  .status-pill.red { background: var(--red); }
+
+  .hint { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .hint .icon { flex-shrink: 0; }
+  .hint.ok { color: var(--green); }
+  .hint.warn { color: #b5790f; }
+  .hint.bad { color: var(--red); }
+
+  .snippet {
+    border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; background: #fff;
+  }
+  .snippet .s-url { font-size: 13px; color: #1a0dab; display: flex; align-items: center; gap: 6px; }
+  .snippet .s-url .globe { color: var(--green); font-size: 11px; }
+  .snippet .s-title { font-size: 18px; color: #1a0dab; margin: 4px 0 4px; line-height: 1.3; }
+  .snippet .s-desc { font-size: 13.5px; color: #4d5156; line-height: 1.5; }
+  .snippet.mobile { max-width: 340px; margin: 0 auto; }
+  .snippet.mobile .s-title { font-size: 16px; }
+
+  .target-kw-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 4px; }
+  .target-kw-row .field { flex: 1; min-width: 180px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-link" href="/">&larr; Back to checker</a>
+  <h1>Title &amp; Description Length Checker</h1>
+  <p>Draft your title and meta description and see how they'll look in Google search results</p>
+</div>
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="target-kw-row">
+      <div class="field">
+        <label for="pageUrl">Page URL (for the preview)</label>
+        <input type="text" id="pageUrl" value="{{ prefill_url }}" placeholder="https://example.com/page">
+      </div>
+      <div class="field">
+        <label for="targetKeyword">Target keyword (optional)</label>
+        <input type="text" id="targetKeyword" value="{{ prefill_keyword }}" placeholder="e.g. cdn">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Page Title</h2>
+    <input type="text" id="titleInput" value="{{ prefill_title }}" placeholder="Your page title">
+    <div class="meta-row">
+      <span class="meta-count">Characters: <b id="titleCount">0</b></span>
+      <span class="status-pill" id="titleStatus"></span>
+    </div>
+    <div class="hint" id="titleHint"></div>
+    <div class="hint" id="titleKeywordHint"></div>
+  </div>
+
+  <div class="card">
+    <h2>Meta Description</h2>
+    <textarea id="descInput" placeholder="Your meta description">{{ prefill_description }}</textarea>
+    <div class="meta-row">
+      <span class="meta-count">Characters: <b id="descCount">0</b></span>
+      <span class="status-pill" id="descStatus"></span>
+    </div>
+    <div class="hint" id="descHint"></div>
+    <div class="hint" id="descKeywordHint"></div>
+  </div>
+
+  <div class="card">
+    <h2>Desktop snippet example</h2>
+    <div class="snippet">
+      <div class="s-url"><span class="globe">&#9679;</span><span id="snippetUrlDesktop">https://example.com/page</span></div>
+      <div class="s-title" id="snippetTitleDesktop">Your page title</div>
+      <div class="s-desc" id="snippetDescDesktop">Your meta description</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Mobile snippet example</h2>
+    <div class="snippet mobile">
+      <div class="s-url"><span class="globe">&#9679;</span><span id="snippetUrlMobile">https://example.com/page</span></div>
+      <div class="s-title" id="snippetTitleMobile">Your page title</div>
+      <div class="s-desc" id="snippetDescMobile">Your meta description</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var TITLE_GOOD = [50, 60];
+  var TITLE_WARN = [30, 70];
+  var DESC_GOOD = [140, 155];
+  var DESC_WARN = [120, 165];
+  var MOBILE_DESC_TRUNCATE = 120;
+  var DESKTOP_DESC_TRUNCATE = 155;
+  var TITLE_TRUNCATE = 60;
+
+  function statusFor(len, good, warn) {
+    if (len >= good[0] && len <= good[1]) return 'green';
+    if (len >= warn[0] && len <= warn[1]) return 'orange';
+    return 'red';
+  }
+
+  function truncate(text, max) {
+    if (text.length <= max) return text;
+    return text.slice(0, max).replace(/\s+\S*$/, '') + '…';
+  }
+
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function highlightKeyword(text, keyword) {
+    var escaped = escapeHtml(text);
+    var words = keyword.trim().split(/\s+/).filter(Boolean);
+    words.forEach(function (w) {
+      var re = new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+      escaped = escaped.replace(re, '<strong>$1</strong>');
+    });
+    return escaped;
+  }
+
+  function containsAllWords(text, keyword) {
+    var lower = text.toLowerCase();
+    var words = keyword.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+    return words.every(function (w) { return lower.indexOf(w) !== -1; });
+  }
+
+  function render() {
+    var title = document.getElementById('titleInput').value;
+    var desc = document.getElementById('descInput').value;
+    var url = document.getElementById('pageUrl').value || 'https://example.com/page';
+    var keyword = document.getElementById('targetKeyword').value;
+
+    var titleLen = title.length;
+    var descLen = desc.length;
+
+    document.getElementById('titleCount').textContent = titleLen;
+    var titleStatus = statusFor(titleLen, TITLE_GOOD, TITLE_WARN);
+    var ts = document.getElementById('titleStatus');
+    ts.className = 'status-pill ' + titleStatus;
+    ts.textContent = titleStatus === 'green' ? 'Good length' : (titleStatus === 'orange' ? 'Could be better' : (titleLen === 0 ? 'Missing' : 'Poor length'));
+
+    var titleHint = document.getElementById('titleHint');
+    if (titleLen === 0) {
+      titleHint.className = 'hint bad';
+      titleHint.innerHTML = '<span class="icon">&#9888;</span> Add a page title.';
+    } else if (titleLen < TITLE_GOOD[0]) {
+      titleHint.className = 'hint warn';
+      titleHint.innerHTML = '<span class="icon">&#9888;</span> Title is short - aim for ' + TITLE_GOOD[0] + '-' + TITLE_GOOD[1] + ' characters to use the available space.';
+    } else if (titleLen > TITLE_GOOD[1]) {
+      titleHint.className = 'hint warn';
+      titleHint.innerHTML = '<span class="icon">&#9888;</span> Title is long and may be truncated in search results (target ' + TITLE_GOOD[0] + '-' + TITLE_GOOD[1] + ' characters).';
+    } else {
+      titleHint.className = 'hint ok';
+      titleHint.innerHTML = '<span class="icon">&#10003;</span> Good title length.';
+    }
+
+    var titleKwHint = document.getElementById('titleKeywordHint');
+    var titleHasKw = containsAllWords(title, keyword);
+    if (titleHasKw === null) {
+      titleKwHint.innerHTML = '';
+    } else if (titleHasKw) {
+      titleKwHint.className = 'hint ok';
+      titleKwHint.innerHTML = '<span class="icon">&#10003;</span> Target keyword found in the title.';
+    } else {
+      titleKwHint.className = 'hint warn';
+      titleKwHint.innerHTML = '<span class="icon">&#9888;</span> It is recommended to include your target keyword in the title.';
+    }
+
+    document.getElementById('descCount').textContent = descLen;
+    var descStatus = statusFor(descLen, DESC_GOOD, DESC_WARN);
+    var ds = document.getElementById('descStatus');
+    ds.className = 'status-pill ' + descStatus;
+    ds.textContent = descStatus === 'green' ? 'Good length' : (descStatus === 'orange' ? 'Could be better' : (descLen === 0 ? 'Missing' : 'Poor length'));
+
+    var descHint = document.getElementById('descHint');
+    if (descLen === 0) {
+      descHint.className = 'hint bad';
+      descHint.innerHTML = '<span class="icon">&#9888;</span> Add a meta description.';
+    } else if (descLen < DESC_GOOD[0]) {
+      descHint.className = 'hint warn';
+      descHint.innerHTML = '<span class="icon">&#9888;</span> Description is short - aim for ' + DESC_GOOD[0] + '-' + DESC_GOOD[1] + ' characters on desktop (mobile target is roughly 120-150).';
+    } else if (descLen > DESC_GOOD[1]) {
+      descHint.className = 'hint warn';
+      descHint.innerHTML = '<span class="icon">&#9888;</span> Description is long and will likely be truncated (desktop target ' + DESC_GOOD[0] + '-' + DESC_GOOD[1] + ', mobile roughly 120-150).';
+    } else {
+      descHint.className = 'hint ok';
+      descHint.innerHTML = '<span class="icon">&#10003;</span> Good length for desktop. Mobile results truncate sooner (roughly 120-150 characters).';
+    }
+
+    var descKwHint = document.getElementById('descKeywordHint');
+    var descHasKw = containsAllWords(desc, keyword);
+    if (descHasKw === null) {
+      descKwHint.innerHTML = '';
+    } else if (descHasKw) {
+      descKwHint.className = 'hint ok';
+      descKwHint.innerHTML = '<span class="icon">&#10003;</span> Target keyword found in the meta description.';
+    } else {
+      descKwHint.className = 'hint warn';
+      descKwHint.innerHTML = '<span class="icon">&#9888;</span> It is recommended to include your target keyword in the meta description.';
+    }
+
+    var titlePlaceholder = title || 'Your page title';
+    var descPlaceholder = desc || 'Your meta description';
+
+    document.getElementById('snippetUrlDesktop').textContent = url;
+    document.getElementById('snippetUrlMobile').textContent = url;
+    document.getElementById('snippetTitleDesktop').innerHTML = highlightKeyword(truncate(titlePlaceholder, TITLE_TRUNCATE), keyword);
+    document.getElementById('snippetTitleMobile').innerHTML = highlightKeyword(truncate(titlePlaceholder, TITLE_TRUNCATE), keyword);
+    document.getElementById('snippetDescDesktop').innerHTML = highlightKeyword(truncate(descPlaceholder, DESKTOP_DESC_TRUNCATE), keyword);
+    document.getElementById('snippetDescMobile').innerHTML = highlightKeyword(truncate(descPlaceholder, MOBILE_DESC_TRUNCATE), keyword);
+  }
+
+  ['titleInput', 'descInput', 'pageUrl', 'targetKeyword'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', render);
+  });
+  render();
+</script>
+</body>
+</html>

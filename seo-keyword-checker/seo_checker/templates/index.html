@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SEO Keyword Checker</title>
+<style>
+  :root {
+    --green: #1fb15f;
+    --orange: #f2a71b;
+    --red: #e5484d;
+    --ink: #1c2430;
+    --muted: #6b7684;
+    --border: #e6e9ee;
+    --bg: #f4f6f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .topbar {
+    color: #fff;
+    padding: 45px 30px;
+    text-align: center;
+    background: radial-gradient(49.73% 49.73% at 50% 100%, rgba(168, 130, 255, .18) 0%, rgba(168, 130, 255, 0) 100%), #1e1224;
+  }
+  .topbar h1 { margin: 0 0 4px; font-size: 37px; }
+  .topbar p { margin: 0; color: #fff; font-size: 14px; }
+
+  .wrap { max-width: 960px; margin: 35px auto 40px; padding: 0 20px; }
+
+  .form-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(20,30,45,0.08);
+    padding: 22px 24px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .field { flex: 1; min-width: 220px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .03em; }
+  .field input {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+  }
+  .field input:focus { border-color: #4a7dff; box-shadow: 0 0 0 3px rgba(74,125,255,0.15); }
+  .btn {
+    background: linear-gradient(196deg, #ff9a70 .96%, #ff4c00 30.02% 64.37%, #ffbc9f 92.1%);
+    color: #fff;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:hover { background: #2159bf; }
+  .field-checkbox { flex: 0 0 auto; min-width: unset; padding-bottom: 5px; }
+  .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .checkbox-label input { width: auto; margin: 0; }
+  .rendered-badge {
+    display: inline-block; font-size: 10.5px; font-weight: 600; color: #2d6cdf;
+    background: #e8f0fe; padding: 2px 8px; border-radius: 20px; margin-left: 8px;
+    text-transform: uppercase; letter-spacing: .02em; vertical-align: middle;
+  }
+
+  .error-box {
+    margin-top: 18px;
+    background: #fde8e8;
+    border: 1px solid #f6b8b8;
+    color: #9b2c2c;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  .results { margin-top: 24px; }
+
+  .gauge { position: relative; width: 220px; height: 220px; flex-shrink: 0; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge-label {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .gauge-label .pct { font-size: 44px; font-weight: 700; }
+  .gauge-label .sub { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+
+  .page-card, .score-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(20,30,45,0.06);
+    padding: 20px 24px;
+    margin-bottom: 18px;
+  }
+  .page-card-header, .score-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+  .card-title { font-size: 15px; font-weight: 700; }
+  .btn-outline {
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px;
+    font-size: 12.5px; font-weight: 600; color: var(--ink); text-decoration: none;
+    display: inline-block; margin-left: 8px;
+  }
+  .btn-outline:first-child { margin-left: 0; }
+  .btn-outline:hover { border-color: #2d6cdf; color: #2d6cdf; }
+  .issues-line { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+
+  .page-card-body { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+  .page-thumb {
+    width: 200px; height: 130px; flex-shrink: 0; border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--border); background: #f4f6f9;
+  }
+  .page-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 12px; text-align: center; padding: 8px;
+  }
+  .page-meta { flex: 1; min-width: 240px; }
+  .page-meta .meta-label {
+    color: #2d6cdf; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;
+  }
+  .page-meta .meta-value { font-size: 14px; margin-bottom: 2px; word-break: break-word; }
+  .page-meta .meta-value.muted { color: var(--muted); font-size: 13px; }
+  .page-meta .meta-value a { color: #2d6cdf; text-decoration: none; }
+  .page-meta .meta-value a:hover { text-decoration: underline; }
+  .length-badge { text-transform: none; letter-spacing: normal; font-size: 10px; padding: 2px 7px; }
+  .length-explain { font-size: 11.5px; margin-bottom: 12px; }
+
+  .page-card-footer { display: flex; gap: 24px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--border); align-items: center; }
+  .footer-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .footer-item.plain { flex-direction: row; align-items: flex-start; gap: 4px; }
+  .footer-label { color: var(--muted); }
+  .footer-label::after { content: ":"; }
+  .footer-value { font-weight: 600; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+    padding: 3px 9px; border-radius: 5px;
+  }
+  .badge-green { background: var(--green); }
+  .badge-orange { background: var(--orange); }
+  .badge-red { background: var(--red); }
+
+  .score-card-body { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+  .score-bars { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 14px; }
+  .score-bar-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+
+  .groups { display: grid; grid-template-columns: 100%; gap: 18px; margin-top: 20px; }
+  .group-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(20,30,45,0.06);
+    padding: 18px 20px;
+  }
+  .group-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .group-head h3 { margin: 0; font-size: 15px; }
+  .group-head .gpct { font-size: 15px; font-weight: 700; }
+  .bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin-bottom: 14px; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+
+  .check { padding: 10px 0; border-top: 1px solid var(--border); }
+  .check:first-child { border-top: none; }
+  .check-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .check-name { font-weight: 600; font-size: 13.5px; flex: 1; }
+  .check-score { font-size: 12px; color: var(--muted); }
+  .importance-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 600;
+    background: #eef1f5; color: var(--muted); text-transform: uppercase; letter-spacing: .02em;
+    margin-left: 4px;
+  }
+  .issue-info { margin: 4px 0 0 17px; font-size: 12.5px; color: var(--muted); }
+  .issue-box {
+    margin: 6px 0 0 17px; display: flex; align-items: flex-start; gap: 9px;
+    padding: 8px 10px; border-radius: 6px; font-size: 12.5px; border: 1px solid;
+  }
+  .issue-box .issue-icon { flex-shrink: 0; font-weight: 700; line-height: 1.4; }
+  .issue-box .issue-text strong { padding: 0 2px; border-radius: 3px; }
+  .issue-box.good { background: #fff; border-color: var(--border); color: var(--ink); }
+  .issue-box.good .issue-icon { color: var(--green); }
+  .issue-box.good .issue-text strong { background: #fff3b0; }
+  .issue-box.warn { background: #fff9e8; border-color: #f2d98a; color: #7a5b06; }
+  .issue-box.warn .issue-icon {
+    color: #f2a71b; width: 15px; height: 15px; border: 1.5px solid currentColor; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-top: 1px;
+  }
+  .issue-box.warn .issue-text strong { background: #ffe8ad; color: #7a5b06; }
+  .issue-box.bad { background: #fdecec; border-color: #f3b4b4; color: #8a1f1f; }
+  .issue-box.bad .issue-icon { color: var(--red); font-size: 13px; }
+  .issue-box.bad .issue-text strong { background: #f8c9c9; color: #8a1f1f; }
+  .check-highlight {
+    margin: 4px 0 0 17px; font-size: 13px; color: var(--ink); line-height: 1.5;
+    background: #f8f9fb; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+  }
+  .check-highlight strong { background: #fff3b0; color: var(--ink); padding: 0 2px; border-radius: 3px; }
+  .heading-item {
+    margin: 4px 0 0 17px; font-size: 13px; color: var(--ink); line-height: 1.5;
+    background: #f8f9fb; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+    display: flex; gap: 8px; align-items: baseline;
+  }
+  .heading-item + .heading-item { margin-top: 6px; }
+  .level-tag {
+    font-size: 10px; font-weight: 700; color: #2d6cdf; background: #e8f0fe;
+    padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+  }
+  .heading-item strong { background: #fff3b0; color: var(--ink); padding: 0 2px; border-radius: 3px; }
+  .snippet-list { margin: 4px 0 0 17px; display: flex; flex-direction: column; gap: 6px; }
+  .snippet-item {
+    font-size: 13px; color: var(--ink); line-height: 1.5;
+    background: #f8f9fb; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+  }
+  .snippet-item strong { background: #fff3b0; color: var(--ink); padding: 0 2px; border-radius: 3px; }
+  .image-list { margin: 4px 0 0 17px; display: flex; flex-direction: column; gap: 6px; }
+  .image-item {
+    font-size: 12.5px; background: #f8f9fb; border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .image-item .image-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .image-item .src { flex: 1; min-width: 160px; word-break: break-all; color: var(--ink); }
+  .image-item a.src { color: #2d6cdf; text-decoration: none; }
+  .image-item a.src:hover { text-decoration: underline; }
+  .image-item .flags { display: flex; gap: 10px; flex-shrink: 0; }
+  .image-item .flag { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .flag .yes { color: var(--green); font-weight: 700; }
+  .flag .no { color: var(--red); font-weight: 700; }
+  .image-item .image-detail { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); color: var(--muted); }
+  .image-item .image-detail div { margin-bottom: 2px; }
+  .image-item .image-detail strong { background: #fff3b0; color: var(--ink); padding: 0 2px; border-radius: 3px; }
+  .image-item .image-detail .label { color: var(--muted); }
+  .no-matches { margin: 4px 0 0 17px; font-size: 12.5px; color: var(--muted); }
+
+  .color-green { color: var(--green); }
+  .color-orange { color: var(--orange); }
+  .color-red { color: var(--red); }
+  .bg-green { background: var(--green); }
+  .bg-orange { background: var(--orange); }
+  .bg-red { background: var(--red); }
+
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    background: none; border: none; padding: 10px 18px; font-size: 13.5px; font-weight: 600;
+    color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab-btn.active { color: #2d6cdf; border-bottom-color: #2d6cdf; }
+  .tab-btn:hover { color: #2d6cdf; }
+
+  .element-card {
+    background: #fff; border-radius: 14px; box-shadow: 0 8px 24px rgba(20,30,45,0.06);
+    padding: 18px 20px; margin-bottom: 18px;
+  }
+  .element-head { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .element-note { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+  .element-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .element-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border);
+  }
+  .element-table td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+  .element-table tr:last-child td { border-bottom: none; }
+  .element-table .col-level, .element-table .col-words, .element-table .col-issues { white-space: nowrap; }
+  .element-table .col-media-url { max-width: 260px; word-break: break-all; white-space: normal; }
+  .element-table .level-tag {
+    font-size: 10px; font-weight: 700; color: #2d6cdf; background: #e8f0fe;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .element-table strong { background: #fff3b0; color: var(--ink); padding: 0 2px; border-radius: 3px; }
+  .element-table a { color: #2d6cdf; text-decoration: none; }
+  .element-table a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>SEO Keyword Checker</h1>
+  <p>Check how well a page is optimized for a target keyword</p>
+</div>
+
+<div class="wrap">
+  <form class="form-card" method="post">
+    <div class="field">
+      <label for="url">Page URL</label>
+      <input id="url" name="url" type="text" placeholder="https://example.com/page" value="{{ url }}" required>
+    </div>
+    <div class="field">
+      <label for="keyword">Target keyword</label>
+      <input id="keyword" name="keyword" type="text" placeholder="e.g. cdn" value="{{ keyword }}" required>
+    </div>
+    <div class="field field-checkbox">
+      <label class="checkbox-label">
+        <input id="render" name="render" type="checkbox" {% if render %}checked{% endif %}>
+        Render JavaScript
+      </label>
+    </div>
+    <button class="btn" type="submit">Check page</button>
+  </form>
+
+  {% if error %}
+  <div class="error-box">Could not check this page: {{ error }}</div>
+  {% endif %}
+
+  {% if result %}
+  {% macro color_for(pct) -%}
+    {%- if pct >= 80 -%}green{%- elif pct >= 50 -%}orange{%- else -%}red{%- endif -%}
+  {%- endmacro %}
+
+  {% macro length_color(len, good_min, good_max, warn_min, warn_max) -%}
+    {%- if len >= good_min and len <= good_max -%}green
+    {%- elif len >= warn_min and len <= warn_max -%}orange
+    {%- else -%}red
+    {%- endif -%}
+  {%- endmacro %}
+
+  {% macro length_note(len, good_min, good_max) -%}
+    {%- if len == 0 -%}Missing
+    {%- elif len < good_min -%}Too short - fits, but aim for {{ good_min }}-{{ good_max }} characters
+    {%- elif len > good_max -%}Too long, may get cut off (recommended {{ good_min }}-{{ good_max }} characters)
+    {%- else -%}Good length
+    {%- endif -%}
+  {%- endmacro %}
+
+  <div class="results">
+    <div class="page-card">
+      <div class="page-card-header">
+        <span class="card-title">HTML page</span>
+        <a class="btn-outline" href="{{ result.url }}" target="_blank" rel="noopener noreferrer">Show page</a>
+      </div>
+      <div class="page-card-body">
+        <div class="page-thumb">
+          {% if result.og_image %}
+          <img src="{{ result.og_image }}" alt="Page preview image">
+          {% else %}
+          <div class="thumb-placeholder">No preview image</div>
+          {% endif %}
+        </div>
+        <div class="page-meta">
+          {% set title_len = result.title | length %}
+          {% set desc_len = result.description | length %}
+          <div class="meta-label">
+            Meta title{% if result.rendered %}<span class="rendered-badge">JS rendered</span>{% endif %}
+            <span class="badge badge-{{ length_color(title_len, 50, 60, 30, 70) }} length-badge">{{ title_len }} chars</span>
+          </div>
+          <div class="meta-value">{{ result.title or "(no title found)" }}</div>
+          <div class="length-explain color-{{ length_color(title_len, 50, 60, 30, 70) }}">{{ length_note(title_len, 50, 60) }}</div>
+
+          <div class="meta-label">
+            Meta description
+            <span class="badge badge-{{ length_color(desc_len, 140, 155, 120, 165) }} length-badge">{{ desc_len }} chars</span>
+          </div>
+          <div class="meta-value muted">{{ result.description or "(no meta description found)" }}</div>
+          <div class="length-explain color-{{ length_color(desc_len, 140, 155, 120, 165) }}">{{ length_note(desc_len, 140, 155) }}</div>
+          <div class="meta-label">URL</div>
+          <div class="meta-value"><a href="{{ result.url }}" target="_blank" rel="noopener noreferrer">{{ result.url }}</a></div>
+        </div>
+      </div>
+      <div class="page-card-footer">
+        <div class="footer-item">
+          <span class="footer-label">Status code</span>
+          <span class="badge badge-{{ 'green' if result.status_code == 200 else 'red' }}">{{ result.status_code }}</span>
+        </div>
+        <div class="footer-item">
+          <span class="footer-label">Page status</span>
+          <span class="badge badge-{{ 'green' if result.follow == 'Follow' else 'red' }}">{{ result.follow }}</span>
+          <span class="badge badge-{{ 'green' if result.index == 'Index' else 'red' }}">{{ result.index }}</span>
+        </div>
+        <div class="footer-item">
+          <span class="footer-label">Language</span>
+          <span class="badge badge-green">{{ result.language }}</span>
+        </div>
+        <div class="footer-item plain">
+          <span class="footer-label">Response time</span>
+          <span class="footer-value">{{ result.response_time }} sec</span>
+        </div>
+        <div class="footer-item plain">
+          <span class="footer-label">File size</span>
+          <span class="footer-value">{{ result.file_size_kb }} kB</span>
+        </div>
+        <div class="footer-item plain">
+          <span class="footer-label">Word count</span>
+          <span class="footer-value">{{ result.word_count }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="score-card">
+      <div class="score-card-header">
+        <span class="card-title">Keyword score</span>
+        <span class="issues-line">
+          Issues: {{ result.issue_count }}
+          {% if result.issue_count == 0 %}
+          <span class="badge badge-green">All checks passed</span>
+          {% else %}
+          <span class="badge badge-orange">Issues found</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="score-card-body">
+        <div class="gauge">
+          <svg width="220" height="220" viewBox="0 0 220 220">
+            <circle cx="110" cy="110" r="92" fill="none" stroke="#e6e9ee" stroke-width="20"></circle>
+            <circle cx="110" cy="110" r="92" fill="none"
+                    stroke="{{ {'green': '#1fb15f', 'orange': '#f2a71b', 'red': '#e5484d'}[color_for(result.overall_pct)] }}"
+                    stroke-width="20"
+                    stroke-linecap="round"
+                    stroke-dasharray="{{ 578.05 * result.overall_pct / 100 }} 578.05">
+            </circle>
+          </svg>
+          <div class="gauge-label">
+            <div class="pct color-{{ color_for(result.overall_pct) }}">{{ result.overall_pct }}%</div>
+            <div class="sub">Keyword score</div>
+          </div>
+        </div>
+        <div class="score-bars">
+          {% for gname, group in result.groups.items() %}
+          <div class="score-bar-row">
+            <div class="score-bar-label"><span>{{ gname }}</span><span>{{ group.pct }}%</span></div>
+            <div class="bar"><div class="bar-fill bg-{{ color_for(group.pct) }}" style="width: {{ group.pct }}%;"></div></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button type="button" class="tab-btn active" data-tab="tab-checks" onclick="showTab(this)">Checks</button>
+      <button type="button" class="tab-btn" data-tab="tab-elements" onclick="showTab(this)">Elements</button>
+    </div>
+
+    <div id="tab-checks" class="tab-panel">
+    <div class="groups">
+      {% for gname, group in result.groups.items() %}
+      <div class="group-card">
+        <div class="group-head">
+          <h3>{{ gname }}</h3>
+          <span class="gpct color-{{ color_for(group.pct) }}">{{ group.pct }}%</span>
+        </div>
+        <div class="bar"><div class="bar-fill bg-{{ color_for(group.pct) }}" style="width: {{ group.pct }}%;"></div></div>
+
+        {% for c in group.checks if c.max %}
+        {% set cpct = (100 * c.score / c.max) | round(0, 'floor') if c.max else 0 %}
+        {% set dot_color = 'orange' if (c.importance == 'Nice to have' and color_for(cpct) == 'red') else color_for(cpct) %}
+        <div class="check">
+          <div class="check-head">
+            <span class="status-dot bg-{{ dot_color }}"></span>
+            <span class="check-name">{{ c.name }}</span>
+            <span class="check-score">{{ c.score }}/{{ c.max }}</span>
+          </div>
+          <span class="importance-tag">{{ c.importance }}</span>
+          {% if c.highlight %}
+          <div class="check-highlight">{{ c.highlight | safe }}</div>
+          {% endif %}
+
+          {% if c.headings is defined %}
+            {% for h in c.headings %}
+            <div class="heading-item"><span class="level-tag">{{ h.level }}</span><span>{{ h.highlight | safe }}</span></div>
+            {% endfor %}
+            {% if not c.headings %}<div class="no-matches">Not used within the H2-H6 headings.</div>{% endif %}
+          {% endif %}
+
+          {% if c.snippets is defined %}
+            <div class="snippet-list">
+              {% for s in c.snippets %}
+              <div class="snippet-item">{{ s | safe }}</div>
+              {% endfor %}
+            </div>
+            {% if not c.snippets %}<div class="no-matches">The keyword is not used in strong or bold tags.</div>{% endif %}
+          {% endif %}
+
+          {% if c.images is defined %}
+            {% if c.images %}
+            <div class="image-list">
+              {% for img in c.images %}
+              <div class="image-item">
+                <div class="image-top">
+                  {% if img.abs_src %}
+                  <a class="src" href="{{ img.abs_src }}" target="_blank" rel="noopener noreferrer">{{ img.src }}</a>
+                  {% else %}
+                  <span class="src">{{ img.src }}</span>
+                  {% endif %}
+                  <span class="flags">
+                    <span class="flag">Alt <span class="{{ 'yes' if img.alt_ok else 'no' }}">{{ '✓' if img.alt_ok else '✗' }}</span></span>
+                    <span class="flag">URL <span class="{{ 'yes' if img.url_ok else 'no' }}">{{ '✓' if img.url_ok else '✗' }}</span></span>
+                    <span class="flag">Title <span class="{{ 'yes' if img.title_ok else 'no' }}">{{ '✓' if img.title_ok else '✗' }}</span></span>
+                  </span>
+                </div>
+                <div class="image-detail">
+                  <div><span class="label">Alt:</span> {{ img.alt_highlight | safe if img.alt_highlight else "(no alt text)" }}</div>
+                  <div><span class="label">Title:</span> {{ img.title_highlight | safe if img.title_highlight else "(no title attribute)" }}</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-matches">There are none.</div>
+            {% endif %}
+          {% endif %}
+
+          {% for iss in c.issues %}
+            {% if iss.level == 'info' %}
+            <div class="issue-info">{{ iss.text | safe }}</div>
+            {% else %}
+            <div class="issue-box {{ iss.level }}">
+              <span class="issue-icon">{% if iss.level == 'good' %}&#10003;{% elif iss.level == 'warn' %}!{% else %}&#10007;{% endif %}</span>
+              <span class="issue-text">{{ iss.text | safe }}</span>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    </div>
+
+    <div id="tab-elements" class="tab-panel" style="display:none;">
+      <div class="element-card">
+        <div class="element-head">Heading structure — {{ result.headings_outline | length }}</div>
+        <table class="element-table">
+          <thead><tr><th class="col-level">Level</th><th>Content</th><th class="col-issues">Issues</th></tr></thead>
+          <tbody>
+            {% for h in result.headings_outline %}
+            <tr>
+              <td class="col-level"><span class="level-tag">{{ h.level }}</span></td>
+              <td>{{ h.highlight | safe if h.text else "(empty)" }}</td>
+              <td class="col-issues">{{ h.issues | join("; ") if h.issues else "-" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="element-card">
+        <div class="element-head">Keywords in text blocks — {{ result.text_blocks | length }}</div>
+        <p class="element-note">Text blocks longer than 100 characters. Blocks repeated on this page are flagged.</p>
+        <table class="element-table">
+          <thead><tr><th>Text block</th><th class="col-words">Word count</th></tr></thead>
+          <tbody>
+            {% for b in result.text_blocks %}
+            <tr>
+              <td>{{ b.text }}{% if b.repeated %}<span class="badge badge-orange" style="margin-left:6px;">Repeated</span>{% endif %}</td>
+              <td class="col-words">{{ b.word_count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="element-card">
+        <div class="element-head">Media files — {{ result.media_files | length }}</div>
+        <table class="element-table">
+          <thead><tr><th>URL</th><th>Alt text</th><th>Title</th></tr></thead>
+          <tbody>
+            {% for m in result.media_files %}
+            <tr>
+              <td class="col-media-url"><a href="{{ m.abs_src }}" target="_blank" rel="noopener noreferrer">{{ m.src }}</a></td>
+              <td>{{ m.alt or "-" }}</td>
+              <td>{{ m.title or "-" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="element-card">
+        <div class="element-head">Top keywords — {{ result.top_keywords | length }}</div>
+        <p class="element-note">Other keyword phrases found on this page, scored the same way as the main check. Only phrases scoring 50% or higher are shown.</p>
+        <table class="element-table">
+          <thead><tr><th>Keyword</th><th class="col-words">Keyword score</th><th class="col-issues"></th></tr></thead>
+          <tbody>
+            {% for k in result.top_keywords %}
+            <tr>
+              <td>{{ k.keyword }}</td>
+              <td class="col-words"><span class="badge badge-{{ color_for(k.score) }}">{{ k.score }}%</span></td>
+              <td class="col-issues">
+                <form method="post" style="margin:0;">
+                  <input type="hidden" name="url" value="{{ result.url }}">
+                  <input type="hidden" name="keyword" value="{{ k.keyword }}">
+                  {% if result.rendered %}<input type="hidden" name="render" value="on">{% endif %}
+                  <button type="submit" class="btn-outline" style="font-size:11px; padding:4px 10px;">Check keyword optimization</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function showTab(btn) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  var targetId = btn.getAttribute('data-tab');
+  document.querySelectorAll('.tab-panel').forEach(function (p) {
+    p.style.display = (p.id === targetId) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

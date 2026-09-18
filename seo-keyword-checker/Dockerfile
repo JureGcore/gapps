@@ -7,10 +7,10 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# "chromium" and "chromium-headless-shell" are two SEPARATE install
-# targets - installing chromium alone doesn't fetch the headless-shell
-# build that a default headless launch() actually looks for.
-RUN playwright install chromium chromium-headless-shell
+RUN playwright install chromium
+RUN echo "=== playwright --version ===" && playwright --version \
+    && echo "=== pip show playwright ===" && pip show playwright \
+    && echo "=== /ms-playwright contents ===" && find /ms-playwright -maxdepth 2 2>&1
 
 COPY seo_checker ./seo_checker
 COPY seo_keyword_check.py .

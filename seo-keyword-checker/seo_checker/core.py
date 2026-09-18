@@ -54,9 +54,16 @@ def fetch(url):
     return resp, elapsed
 
 
-def fetch_rendered(url, wait_ms=1500):
+def fetch_rendered(url, wait_ms=2500):
     """Load the page in headless Chromium and return the fully rendered DOM,
-    for pages whose content is injected by JavaScript (SPAs)."""
+    for pages whose content is injected by JavaScript (SPAs).
+
+    Uses wait_until="load" rather than "networkidle": pages with ongoing
+    analytics/tracking beacons never go network-idle, which previously ran
+    past a gateway timeout in front of the container and came back as a
+    raw 504 instead of a clean, catchable error. "load" plus a fixed pause
+    for the framework to hydrate is faster and good enough for reading
+    title/meta/content."""
     from playwright.sync_api import sync_playwright
 
     start = time.perf_counter()
@@ -67,7 +74,7 @@ def fetch_rendered(url, wait_ms=1500):
         browser = pw.chromium.launch(args=["--no-sandbox"])
         try:
             page = browser.new_page(user_agent="Mozilla/5.0 (compatible; SEOKeywordCheck/1.0)")
-            response = page.goto(url, wait_until="networkidle", timeout=30000)
+            response = page.goto(url, wait_until="load", timeout=10000)
             page.wait_for_timeout(wait_ms)
             html = page.content()
             status_code = response.status if response else None

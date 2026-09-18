@@ -61,7 +61,9 @@ def fetch_rendered(url, wait_ms=1500):
 
     start = time.perf_counter()
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        # Default headless launches prefer the separate "chromium_headless_shell"
+        # build, which this base image doesn't ship - force the full browser instead.
+        browser = pw.chromium.launch(channel="chromium")
         try:
             page = browser.new_page(user_agent="Mozilla/5.0 (compatible; SEOKeywordCheck/1.0)")
             response = page.goto(url, wait_until="networkidle", timeout=30000)

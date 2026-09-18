@@ -43,7 +43,7 @@ jobs:
           name: seo-keyword-checker
           image: ${{ env.IMAGE }}
           listening-port: 8080
-          flavor: 1000mCPU-2048MB
+          flavor: 1140mCPU-2048MiB
           timeout: 600
           scale-min: 0
           scale-max: 2

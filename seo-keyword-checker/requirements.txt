@@ -2,5 +2,5 @@ flask
 requests
 beautifulsoup4
 lxml
-playwright
+playwright==1.48.0
 gunicorn

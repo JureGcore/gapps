@@ -81,7 +81,7 @@ def fetch_rendered(url, wait_ms=2500):
         try:
             page = browser.new_page(user_agent="Mozilla/5.0 (compatible; SEOKeywordCheck/1.0)")
             try:
-                response = page.goto(url, wait_until="domcontentloaded", timeout=10000)
+                response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 status_code = response.status if response else None
             except Exception:
                 status_code = None
